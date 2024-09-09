@@ -53,12 +53,9 @@ const (
 )
 
 type SetupConfig struct {
-	ProviderSource     *string
-	ProviderVersion    *string
-	TerraformVersion   *string
-	TerraformProvider  *schema.Provider
-	NativeProviderPath *string
-	DefaultScheduler   terraform.ProviderScheduler
+	ProviderVersion   string
+	TerraformProvider *schema.Provider
+	DefaultScheduler  terraform.ProviderScheduler
 }
 
 func prepareTerraformProviderConfiguration(creds map[string]string, pc v1beta1.ProviderConfiguration) map[string]any {
@@ -90,14 +87,7 @@ func prepareTerraformProviderConfiguration(creds map[string]string, pc v1beta1.P
 // returns Terraform provider setup configuration
 func TerraformSetupBuilder(setupCfg SetupConfig) terraform.SetupFn {
 	return func(ctx context.Context, client client.Client, mg resource.Managed) (terraform.Setup, error) {
-		ps := terraform.Setup{
-			Version: *setupCfg.TerraformVersion,
-			Requirement: terraform.ProviderRequirement{
-				Source:  *setupCfg.ProviderSource,
-				Version: *setupCfg.ProviderVersion,
-			},
-			Scheduler: setupCfg.DefaultScheduler,
-		}
+		ps := terraform.Setup{}
 
 		configRef := mg.GetProviderConfigReference()
 		if configRef == nil {

@@ -18,8 +18,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -65,11 +67,11 @@ func main() {
 		syncInterval               = app.Flag("sync", "Sync interval controls how often all resources will be double checked for drift.").Short('s').Default("1h").Duration()
 		pollInterval               = app.Flag("poll", "Poll interval controls how often an individual resource should be checked for drift.").Default("10m").Duration()
 		leaderElection             = app.Flag("leader-election", "Use leader election for the controller manager.").Short('l').Default("false").OverrideDefaultFromEnvar("LEADER_ELECTION").Bool()
-		terraformVersion           = app.Flag("terraform-version", "Terraform version.").Required().Envar("TERRAFORM_VERSION").String()
-		providerSource             = app.Flag("terraform-provider-source", "Terraform provider source.").Required().Envar("TERRAFORM_PROVIDER_SOURCE").String()
-		providerVersion            = app.Flag("terraform-provider-version", "Terraform provider version.").Required().Envar("TERRAFORM_PROVIDER_VERSION").String()
-		nativeProviderPath         = app.Flag("terraform-native-provider-path", "Terraform native provider path for shared execution.").Default("").Envar("TERRAFORM_NATIVE_PROVIDER_PATH").String()
-		pluginProcessTTL           = app.Flag("provider-ttl", "TTL for the native plugin processes before they are replaced. Changing the default may increase memory consumption.").Default("100").Int()
+		_                          = app.Flag("terraform-version", "Terraform version.").Required().Envar("TERRAFORM_VERSION").String()
+		_                          = app.Flag("terraform-provider-source", "Terraform provider source.").Required().Envar("TERRAFORM_PROVIDER_SOURCE").String()
+		_                          = app.Flag("terraform-provider-version", "Terraform provider version.").Required().Envar("TERRAFORM_PROVIDER_VERSION").String()
+		_                          = app.Flag("terraform-native-provider-path", "Terraform native provider path for shared execution.").Default("").Envar("TERRAFORM_NATIVE_PROVIDER_PATH").String()
+		_                          = app.Flag("provider-ttl", "DEPRECATED: TTL for the native plugin processes before they are replaced. Changing the default may increase memory consumption.").Default("100").Int()
 		pollStateMetricInterval    = app.Flag("poll-state-metric", "State metric recording interval").Default("5s").Duration()
 		maxReconcileRate           = app.Flag("max-reconcile-rate", "The global maximum rate per second at which resources may checked for drift from the desired state.").Default("10").Int()
 		namespace                  = app.Flag("namespace", "Namespace used to set as default scope in default secret store config.").Default("crossplane-system").Envar("POD_NAMESPACE").String()
@@ -156,24 +158,11 @@ func main() {
 	provider, err := config.GetProvider(ctx, false)
 	kingpin.FatalIfError(err, "Cannot initialize the provider configuration")
 	setupCfg := clients.SetupConfig{
-		ProviderVersion:    providerVersion,
-		TerraformVersion:   terraformVersion,
-		ProviderSource:     providerSource,
-		TerraformProvider:  provider.TerraformProvider,
-		NativeProviderPath: nativeProviderPath,
+		ProviderVersion:   providerVersion("github.com/equinix/terraform-provider-equinix"),
+		TerraformProvider: provider.TerraformProvider,
 	}
 
-	// if the native Terraform provider plugin's path is not configured via
-	// the env. variable TERRAFORM_NATIVE_PROVIDER_PATH or
-	// the `--terraform-native-provider-path` command-line option,
-	// we do not use the shared gRPC server and default to the regular
-	// Terraform CLI behaviour (of forking a plugin process per invocation).
-	// This removes some complexity for setting up development environments.
 	setupCfg.DefaultScheduler = terraform.NewNoOpProviderScheduler()
-	if len(*setupCfg.NativeProviderPath) != 0 {
-		setupCfg.DefaultScheduler = terraform.NewSharedProviderScheduler(log, *pluginProcessTTL,
-			terraform.WithSharedProviderOptions(terraform.WithNativeProviderPath(*setupCfg.NativeProviderPath), terraform.WithNativeProviderName("registry.terraform.io/"+*setupCfg.ProviderSource)))
-	}
 
 	featureFlags := &feature.Flags{}
 	o := upcontroller.Options{
@@ -187,7 +176,6 @@ func main() {
 		},
 		Provider:              provider,
 		SetupFn:               clients.TerraformSetupBuilder(setupCfg),
-		WorkspaceStore:        terraform.NewWorkspaceStore(log, terraform.WithDisableInit(false), terraform.WithProcessReportInterval(*pollInterval), terraform.WithFeatures(featureFlags)),
 		PollJitter:            pollJitter,
 		OperationTrackerStore: upcontroller.NewOperationStore(log),
 		StartWebhooks:         *certsDir != "",
@@ -230,4 +218,21 @@ func main() {
 
 	kingpin.FatalIfError(controller.Setup(mgr, o), "Cannot setup Equinix controllers")
 	kingpin.FatalIfError(mgr.Start(ctrl.SetupSignalHandler()), "Cannot start controller manager")
+}
+
+func providerVersion(moduleName string) string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		fmt.Println("No build info available")
+		return ""
+	}
+
+	for _, dep := range info.Deps {
+		if dep.Path == moduleName {
+			return dep.Version
+		}
+	}
+
+	// Return empty string if module is not found
+	return ""
 }
