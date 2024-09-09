@@ -20,6 +20,7 @@ import (
 	// Note(turkenh): we are importing this to embed provider schema document
 	"context"
 	_ "embed"
+	"fmt"
 
 	"github.com/crossplane-contrib/provider-jet-equinix/config/metal"
 	upconfig "github.com/crossplane/upjet/pkg/config"
@@ -43,6 +44,44 @@ var providerSchema string
 
 //go:embed provider-metadata.yaml
 var providerMetadata string
+
+var frameworkResources = []string{
+	"equinix_metal_connection",
+	"equinix_metal_gateway",
+	"equinix_metal_organization",
+	"equinix_metal_organization_member",
+	"equinix_metal_project",
+	"equinix_metal_project_ssh_key",
+	"equinix_metal_ssh_key",
+	"equinix_metal_vlan",
+}
+
+var sdkResources = []string{
+	"equinix_fabric_cloud_router",
+	"equinix_fabric_connection",
+	"equinix_fabric_network",
+	"equinix_fabric_routing_protocol",
+	"equinix_fabric_service_profile",
+	"equinix_metal_bgp_session",
+	"equinix_metal_device",
+	"equinix_metal_device_network_type",
+	"equinix_metal_ip_attachment",
+	"equinix_metal_port",
+	"equinix_metal_port_vlan_attachment",
+	"equinix_metal_project_api_key",
+	"equinix_metal_reserved_ip_block",
+	"equinix_metal_spot_market_request",
+	"equinix_metal_user_api_key",
+	"equinix_metal_virtual_circuit",
+	"equinix_metal_vrf",
+	"equinix_network_acl_template",
+	"equinix_network_bgp",
+	"equinix_network_device",
+	"equinix_network_device_link",
+	"equinix_network_file",
+	"equinix_network_ssh_key",
+	"equinix_network_ssh_user",
+}
 
 func getProviderSchema(s string) (*schema.Provider, error) {
 	ps := tfjson.ProviderSchemas{}
@@ -87,18 +126,18 @@ func GetProvider(_ context.Context, generationProvider bool) (*upconfig.Provider
 		),
 		upconfig.WithShortName(resourcePrefix),
 		upconfig.WithRootGroup("equinix.jet.crossplane.io"),
-		upconfig.WithIncludeList([]string{
-			".*",
-		}),
-		//
+		// WithIncludeList implies CLI based Terraform reconciliation
+		upconfig.WithIncludeList(nil),
+		upconfig.WithTerraformPluginFrameworkIncludeList(resourceList(frameworkResources)),
+		upconfig.WithTerraformPluginSDKIncludeList(sdkResources),
 		upconfig.WithReferenceInjectors([]upconfig.ReferenceInjector{reference.NewInjector(modulePath)}),
 		upconfig.WithFeaturesPackage("internal/features"),
 		upconfig.WithTerraformProvider(p),
 		upconfig.WithTerraformPluginFrameworkProvider(fwProvider),
 		upconfig.WithSchemaTraversers(&upconfig.SingletonListEmbedder{}),
 		// upconfig.WithSkipList([]string{".*"}), // helpful when debugging to minimize the number of resources
-		// config.WithTerraformPluginSDKIncludeList(resourceList(terraformSDKIncludeList)),
-		// config.WithTerraformPluginFrameworkIncludeList(resourceList(terraformPluginFrameworkExternalNameConfigs)),
+		// upconfig.WithTerraformPluginSDKIncludeList(resourceList(terraformSDKIncludeList)),
+		// upconfig.WithTerraformPluginFrameworkIncludeList(resourceList(terraformPluginFrameworkExternalNameConfigs)),
 	)
 
 	for _, configure := range []func(provider *upconfig.Provider){
@@ -110,4 +149,14 @@ func GetProvider(_ context.Context, generationProvider bool) (*upconfig.Provider
 
 	pc.ConfigureResources()
 	return pc, err
+}
+
+// resourceList returns a list of resources regex patterns that are expected to be included in the provider
+func resourceList(t []string) []string {
+	l := make([]string, len(t))
+	for i, n := range t {
+		// Expected format is regex and we'd like to have exact matches.
+		l[i] = fmt.Sprintf("^%s$", n)
+	}
+	return l
 }
