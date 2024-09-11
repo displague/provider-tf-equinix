@@ -18,6 +18,7 @@ package config
 
 import (
 	// Note(turkenh): we are importing this to embed provider schema document
+
 	"context"
 	_ "embed"
 	"errors"
@@ -26,7 +27,7 @@ import (
 	upconfig "github.com/crossplane/upjet/pkg/config"
 )
 
-var invalidNonEmptyString = "" // "badc0de1-a15d-401b-94e4-deadbeefc0de" // "invalidnonemptystring"
+var invalidNonEmptyString = "badc0de1-a15d-401b-94e4-deadbeefc0de" // "invalidnonemptystring"
 
 // IdentifierAssignedByEquinix will work for all Equinix types because even if
 // the ID is assigned by user, we'll see it in the TF State ID. The
