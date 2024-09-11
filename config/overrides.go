@@ -18,11 +18,16 @@ package config
 
 import (
 	// Note(turkenh): we are importing this to embed provider schema document
+
+	"context"
 	_ "embed"
+	"errors"
 	"strings"
 
 	upconfig "github.com/crossplane/upjet/pkg/config"
 )
+
+var invalidNonEmptyString = "badc0de1-a15d-401b-94e4-deadbeefc0de" // "invalidnonemptystring"
 
 // IdentifierAssignedByEquinix will work for all Equinix types because even if
 // the ID is assigned by user, we'll see it in the TF State ID. The
@@ -30,7 +35,27 @@ import (
 // See https://github.com/crossplane/upjet/blob/main/docs/configuring-a-resource.md#case-2-identifier-from-provider for more details.
 func IdentifierAssignedByEquinix() upconfig.ResourceOption {
 	return func(r *upconfig.Resource) {
-		r.ExternalName = upconfig.IdentifierFromProvider
+		e := upconfig.IdentifierFromProvider
+		e.GetIDFn = func(ctx context.Context, externalName string, parameters map[string]interface{}, cfg map[string]interface{}) (string, error) {
+			if externalName == "" {
+				return invalidNonEmptyString, nil
+			}
+			return externalName, nil
+		}
+		e.GetExternalNameFn = func(tfstate map[string]any) (string, error) {
+			id, ok := tfstate["id"]
+			if !ok {
+				return "", errors.New("id attribute missing from state file")
+			}
+
+			idStr, ok := id.(string)
+			if !ok {
+				return "", errors.New("value of id needs to be string")
+			}
+
+			return idStr, nil
+		}
+		r.ExternalName = e
 	}
 }
 
@@ -98,7 +123,7 @@ func SkipOptCompLateInitialization() upconfig.ResourceOption {
 	return func(r *upconfig.Resource) {
 		for k, s := range r.TerraformResource.Schema {
 			if s.Computed && s.Optional {
-				for _, conflict := range s.ConflictsWith {
+				for _, conflict := range append(s.ConflictsWith, s.ExactlyOneOf...) {
 					if cs := r.TerraformResource.Schema[conflict]; cs.Computed && cs.Optional {
 						r.LateInitializer.AddIgnoredCanonicalFields(conflict)
 						r.LateInitializer.AddIgnoredCanonicalFields(k)

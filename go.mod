@@ -7,7 +7,7 @@ require (
 	github.com/crossplane/crossplane-runtime v1.16.0
 	github.com/crossplane/crossplane-tools v0.0.0-20240516011917-bfb5045f0903
 	github.com/crossplane/upjet v1.4.0
-	github.com/equinix/terraform-provider-equinix v1.39.1-0.20240719163601-ff3f466a27ce
+	github.com/equinix/terraform-provider-equinix v1.39.1-0.20240911162149-c9bac68d3536
 	github.com/hashicorp/terraform-json v0.22.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.34.0
 	github.com/pkg/errors v0.9.1
@@ -78,6 +78,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0 // indirect
 	github.com/hashicorp/terraform-plugin-go v0.23.0 // indirect
 	github.com/hashicorp/terraform-plugin-log v0.9.0 // indirect
+	github.com/hashicorp/terraform-plugin-mux v0.16.0 // indirect
 	github.com/hashicorp/terraform-plugin-testing v1.8.0 // indirect
 	github.com/hashicorp/terraform-registry-address v0.2.3 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
