@@ -19,9 +19,11 @@ package clients
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/upjet/pkg/terraform"
+	"github.com/equinix/terraform-provider-equinix/equinix/provider"
 	equinixprovider "github.com/equinix/terraform-provider-equinix/equinix/provider"
 
 	"github.com/equinix/terraform-provider-equinix/version"
@@ -50,6 +52,7 @@ const (
 	keyResponseMaxPageSize = "response_max_page_size"
 	keyMaxRetries          = "max_retries"
 	keyMaxRetryWaitSeconds = "max_retry_wait_seconds"
+	keyToken               = "token"
 )
 
 type SetupConfig struct {
@@ -74,6 +77,7 @@ func prepareTerraformProviderConfiguration(creds map[string]string, pc v1beta1.P
 		keyAuthToken,
 		keyClientID,
 		keyClientSecret,
+		keyToken,
 	} {
 		if creds[key] != "" {
 			config[key] = creds[key]
@@ -131,7 +135,39 @@ func configureTerraformPluginSDKEquinixClient(ctx context.Context, ps *terraform
 		return errors.Errorf("failed to configure the provider: %v", diag)
 	}
 
+	// ua := "provider-jet-equinix terraform-provider-equinix/" + version.ProviderVersion
+
+	ps.Meta = &provider.Config{
+		BaseURL:        providerKeyAsType[string](ps.Configuration, keyEndpoint),
+		AuthToken:      providerKeyAsType[string](ps.Configuration, keyAuthToken),
+		ClientID:       providerKeyAsType[string](ps.Configuration, keyClientID),
+		ClientSecret:   providerKeyAsType[string](ps.Configuration, keyClientSecret),
+		MaxRetries:     providerKeyAsType[int](ps.Configuration, keyMaxRetries),
+		MaxRetryWait:   providerKeyAsType[time.Duration](ps.Configuration, keyMaxRetryWaitSeconds),
+		RequestTimeout: providerKeyAsType[time.Duration](ps.Configuration, keyRequestTimeout),
+		PageSize:       providerKeyAsType[int](ps.Configuration, keyResponseMaxPageSize),
+		Token:          providerKeyAsType[string](ps.Configuration, keyToken),
+
+		// TerraformVersion: version.ProviderVersion,
+	}
+	if err := ps.Meta.(*provider.Config).Load(ctx); err != nil {
+		return errors.Wrap(err, "failed to initialize the Equinix SDK provider client APIs")
+	}
 	fwProvider := equinixprovider.CreateFrameworkProvider(version.ProviderVersion)
 	ps.FrameworkProvider = fwProvider
 	return nil
+}
+
+// Generic function to retrieve a configuration value as a specific type
+func providerKeyAsType[T any](cfg terraform.ProviderConfiguration, key string) T {
+	var zeroValue T
+	if cfg[key] == nil {
+		return zeroValue
+	}
+
+	value, ok := cfg[key].(T)
+	if !ok {
+		return zeroValue // Return zero value if type assertion fails
+	}
+	return value
 }

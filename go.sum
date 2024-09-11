@@ -64,8 +64,8 @@ github.com/equinix/oauth2-go v1.0.0 h1:fHtAPGq82PdgtK5vEThs8Vwz6f7D/8SX4tE3NJu+K
 github.com/equinix/oauth2-go v1.0.0/go.mod h1:4pulXvUNMktJlewLPnUeJyMW52iCoF1aM+A/Z5xY1ws=
 github.com/equinix/rest-go v1.3.0 h1:m38scYTOfV6N+gcrwchgVDutDffYd+QoYCMm9Jn6jyk=
 github.com/equinix/rest-go v1.3.0/go.mod h1:7pjEgOdG2MZO9BGkQzSurSgVQxRfzc1enceXJS6hYDw=
-github.com/equinix/terraform-provider-equinix v1.39.1-0.20240719163601-ff3f466a27ce h1:BdHJCQIAxB4Yc3ncxnZqJxvDIDNQ54cXr23gbP2njGQ=
-github.com/equinix/terraform-provider-equinix v1.39.1-0.20240719163601-ff3f466a27ce/go.mod h1:zfuF8bMfkc9aOO6nkmz4kV/cKr4IxhmA2fDd2avNsU0=
+github.com/equinix/terraform-provider-equinix v1.39.1-0.20240911162149-c9bac68d3536 h1:kDMecszJliUtT8p/84MXbU6Y02rY4N8QMyKHET30BB0=
+github.com/equinix/terraform-provider-equinix v1.39.1-0.20240911162149-c9bac68d3536/go.mod h1:zfuF8bMfkc9aOO6nkmz4kV/cKr4IxhmA2fDd2avNsU0=
 github.com/evanphx/json-patch v5.6.0+incompatible h1:jBYDEEiFBPxA0v50tFdvOzQQTCvpL6mnFh5mB2/l16U=
 github.com/evanphx/json-patch v5.6.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch/v5 v5.8.0 h1:lRj6N9Nci7MvzrXuX6HFzU8XjmhPiXPlsKEy1u0KQro=
